@@ -1,26 +1,28 @@
 # HandsFree Pgm with GenAI
 
 **Automation of End to End Status Reporting Workflow**
+
 This repository contains Google Workspace Scripts designed to automate and enhance the creation, distribution, and archival of weekly status reports.
 
-Key Features
+**Key Features
+**
 
-threeSendWsrReminderEmailsFileGenAI()
-
+**threeSendWsrReminderEmailsFileGenAI()
+**
 Sends automated email reminders to contributors to update their status in the report.
 Employs an AI model (through Google's Generative Language API) to summarize the most important updates, providing a concise snapshot of progress.
 Simplifies the process and increases engagement in status updates.
-sendWsrEmail()
-
+**sendWsrEmail()
+**
 Automatically extracts key updates from the status report using an AI model (through Google's Generative Language API).
 Creates a draft email summarizing the impactful updates.
 Streamlines reporting for efficiency and focus.
-wsrCopyAndRename()
-
+**wsrCopyAndRename()
+**
 Archives previous versions of the weekly status report, ensuring historical records.
 Maintains orderliness and accessibility.
-How to Use
-
+**How to Use
+**
 Set up your Google Workspace environment:
 Create a folder in Google Drive to store your weekly status reports. Note the folder ID.
 Update the folderId, archiveFolderId, and myApiKey variables in the code with the respective values.
