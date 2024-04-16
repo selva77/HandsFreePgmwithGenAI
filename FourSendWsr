@@ -1,0 +1,187 @@
+// @ts-nocheck
+function FourSendWsr() {
+  // Consider making this configurable
+  //folder where your status report is hosted
+  var folderId = "<<Folder Id>>";
+  //folder where you archive your status reports
+  archiveFolder = "<<Archive Folder Id>>"
+  archiveFolderId=DriveApp.getFolderById(archiveFolder);
+  
+  //GenAI API key
+  const myApiKey = '<<API Key>>';
+  
+  //Determine the current users email address
+  const myEmail = Session.getActiveUser().getEmail();
+  
+  //Variable Declaration 
+  var impactStatements="";
+  
+  try {
+    var files = DriveApp.getFolderById(folderId).getFiles();
+
+    while (files.hasNext()) {
+      var file = files.next();
+      var fileURL = file.getUrl();
+      Logger.log(file.getName());
+    
+    //Read the report
+    var reportString = getReportContent(fileURL);
+
+    //Call LLM to summarize the report content
+    impactStatements=llmSummary(reportString,myApiKey);
+    var emailAddresses = [myEmail]; 
+    var ccemailAddresses = [];
+      
+    //Draft the email
+    var message = "<html> Dear Team,<br>Please find attached this week's Google status report for the Project Mercury. <br>"+impactStatements+"<br><br> Regards,<br>Workspace Wizard</html>";
+     
+      Logger.log("Email addresses: " + emailAddresses.join(",")); 
+      // @ts-ignore
+      sendDate=new Date();
+      dd=sendDate.getDate().toString().padStart(2,"0");
+      mm_temp=sendDate.getMonth()+1;
+      mm=mm_temp.toString().padStart(2,"0");
+      var subject="Project Mercury - Status Report (Week of "+mm+dd+" )";
+     /* MailApp.sendEmail({
+          to: emailAddresses.join(","), 
+          cc: ccemailAddresses.join(","),
+          subject: subject,
+          htmlBody: message,
+          attachments: [file.getAs(MimeType.PDF)]
+        });
+*/
+          const options = {
+          //cc: ccemailAddresses,
+          htmlBody: message,
+          attachments:[file.getAs(MimeType.PDF)]
+          };
+          
+  GmailApp.createDraft(emailAddresses, subject, message, options);
+    //file.moveTo(archiveFolderId);
+    }
+  } catch (error) {
+    Logger.log("Error encountered: " + error.message);
+  }
+  //Archive the report and setup a new file for the next week
+  wsrCopyAndRename(folderId,archiveFolderId);
+}
+
+function getReportContent(fileURL){
+  Logger.log(fileURL);
+  var all_slides =SlidesApp.openByUrl(fileURL);  
+  var slides = all_slides.getSlides();
+  var fullInput="";
+  slides.forEach(function(slide) {
+    // Get the shapes on the slide
+    var shapes = slide.getShapes();
+    shapes.forEach(function(shape) {
+      // Check if the shape is a textbox
+      if (shape.getShapeType() === SlidesApp.ShapeType.TEXT_BOX) {
+        // Get the text from the shape
+        var text = shape.getText().asString();
+        // Check if the text is "Key Topics"
+        if (text.trim() == "Speech to Text Program Status Overview") {
+          // Do something if it's the "Key Topics" slide 
+          //Logger.log("Found 'Key Topics' slide!"+slide.getTables); 
+          var eles = slide.getTables();
+          eles.forEach(ele=>{
+            maxRows=ele.getNumRows();
+            var input="";
+            for (var i=1;i<maxRows;i++){
+              Logger.log(i);
+              input = input + "\nTopic:"+ ele.getCell(i,0).getText().asString() + " " + ele.getCell(i,2).getText().asString();
+            }
+            fullInput=fullInput+input;
+          });
+        }
+      }
+    });
+  });
+  Logger.log(fullInput);
+  return(fullInput);
+}
+
+function llmSummary(fullInput,myApiKey) {
+  let input = "You are a program manager drafting a weekly status report to be sent out to your customer. You will be given a list of topics and their status updates. I want you to paraphrase five most impactful updates prioritizing anything related to BigQuery, Composer, HA/DR, Security topics into impactful statements . The title of this output should be \'<h4>Please see below five key topics updates from this week\\\'s status report:</h4>\'." + fullInput;
+  let apiKey = myApiKey;
+  let apiEndpoint='https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key='+apiKey;
+  var nlData = {
+    'contents': [{
+      'parts':[{
+      'text': input
+      }]
+    }],
+    "generationConfig": {
+    "temperature": 0.7,
+    "topK": 1,
+    "topP": 1,
+    "maxOutputTokens": 30000,
+    "stopSequences": []
+    },
+    "safetySettings": [
+    {
+      "category": "HARM_CATEGORY_HARASSMENT",
+      "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+    },
+    {
+      "category": "HARM_CATEGORY_HATE_SPEECH",
+      "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+    },
+    {
+      "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+      "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+    },
+    {
+      "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+      "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+    }
+    ]
+  };
+
+  // Packages all of the options and the data together for the API call.
+  var nlOptions = {
+    'method' : 'post',
+    'contentType': 'application/json',  
+    'payload' : JSON.stringify(nlData)
+  };
+
+  // Makes the API call.
+  let response = UrlFetchApp.fetch(apiEndpoint, nlOptions);
+ 
+  var jsonData = JSON.parse(response);
+  Logger.log(jsonData);
+  llmsummary=jsonData.candidates[0].content.parts[0].text;
+  Logger.log(llmsummary);
+  // Assuming llmsummary contains the updates separated by some delimiter (e.g., newlines)
+  llmsummary = llmsummary.replace(/\**/g, '');
+  let updates = llmsummary.split('\n');  
+  var htmlOutput="";
+  for (let update of updates) {
+    htmlOutput += update + '<br>'; 
+  }
+  return htmlOutput;
+}
+
+function wsrCopyAndRename(folderId,archiveFolderId) {
+    var files = DriveApp.getFolderById(folderId).getFiles(); 
+   // var archiveFolder = DriveApp.getFolderById(archiveFolderId).getFolders();
+    Logger.log(archiveFolderId);
+    var date=new Date();
+    var date7 = new Date(date.getTime()+7*(24*3600*1000));
+    day=date.getDate().toString().padStart(2,"0");
+    month_temp=date.getMonth()+1;
+    month=month_temp.toString().padStart(2,"0");
+    year=date.getFullYear().toString().padStart(2,"0");
+    while (files.hasNext()) {
+      var file = files.next();
+      file.makeCopy();
+      file.setName(file.getName()+" "+year+month+day);
+      file.moveTo(archiveFolderId);
+      Logger.log(file.getName());
+  }
+    var files = DriveApp.getFolderById(folderId).getFiles(); 
+    while (files.hasNext()) {
+    var file = files.next();
+    file.setName(file.getName().substring(8,100));
+  }
+}
