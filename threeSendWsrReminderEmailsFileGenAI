@@ -1,0 +1,85 @@
+function threeSendWsrReminderEmailsFileGenAI() {
+var files = DriveApp.getFolderById("<<Drive Id>>").getFiles();
+   var file = files.next();
+   fileURL=file.getUrl();
+   Logger.log(file.getName());
+    
+  const myEmail = Session.getActiveUser().getEmail();
+  //Update the recepient email addresses
+  var emailAddresses=[myEmail];
+  var ccemailAddresses = [''];
+  var bccemailAddresses=[''];
+   
+   var llmsummary=llmSummary3();
+  
+  //Update the email message you want to send
+  var message="<html> <b>Gemini's story of the day about Weekly Status Report:</b><br>" + llmsummary;
+  message = message+"<br>--------<br>Hi, <br>This is an automated reminder to update your scrum status before Weekly Delivery Sync. Please ignore this email if you have already completed your update";
+  message=message+"<br><b>The current version of the file is here</b>:  "+fileURL;
+  message=message+"<br>Regards,<br>Workspace Wizard</html>"
+      var subject = "[REMINDER] Weekly Status Report Update";
+      MailApp.sendEmail({
+          to: emailAddresses.join(","), 
+          cc: ccemailAddresses.join(","),
+          bcc: bccemailAddresses.join(","),
+          subject: subject,
+          htmlBody: message
+        });
+}
+
+function llmSummary3(){
+  const myApiKey = '<<API Key>>';
+  let input = "Write a joke based on weekly status reports in less than "+Math.ceil((Math.random()*(100-10)+10))+ " words. make sure the story is safe for work, and not rude.";
+  Logger.log(input);
+  let apiKey = myApiKey;
+  let apiEndpoint='https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key='+apiKey;
+ // let apiEndpoint = 'https://generativelanguage.googleapis.com/v1beta2/projects/my-cool-project/locations/us-central1/models/gemini-1.0-pro-001:generateText?key=' + apiKey;
+  // Creates a JSON request, with text string, language, type and encoding
+  var nlData = {
+    'contents': [{
+      'parts':[{
+      'text': input
+      }]
+    }],
+    "generationConfig": {
+    "temperature": 0.9,
+    "topK": 1,
+    "topP": 1,
+    "maxOutputTokens": 2048,
+    "stopSequences": []
+    },
+    "safetySettings": [
+    {
+      "category": "HARM_CATEGORY_HARASSMENT",
+      "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+    },
+    {
+      "category": "HARM_CATEGORY_HATE_SPEECH",
+      "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+    },
+    {
+      "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+      "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+    },
+    {
+      "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+      "threshold": "BLOCK_MEDIUM_AND_ABOVE"
+    }
+    ]
+  };
+
+  // Packages all of the options and the data together for the API call.
+  var nlOptions = {
+    'method' : 'post',
+    'contentType': 'application/json',  
+    'payload' : JSON.stringify(nlData)
+  };
+
+  // Makes the API call.
+  let response = UrlFetchApp.fetch(apiEndpoint, nlOptions);
+ 
+  var jsonData = JSON.parse(response);
+  Logger.log(jsonData);
+  llmsummary=jsonData.candidates[0].content.parts[0].text;
+  return(llmsummary);
+}
