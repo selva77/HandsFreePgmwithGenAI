@@ -42,8 +42,8 @@ function llmSummary3(){
       }]
     }],
     "generationConfig": {
-    "temperature": 0.9,
-    "topK": 1,
+    "temperature": 0.1,
+    "topK": 5,
     "topP": 1,
     "maxOutputTokens": 2048,
     "stopSequences": []
