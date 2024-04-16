@@ -33,11 +33,5 @@ This repository contains Google Workspace Scripts designed to automate and enhan
 
 **Contact**
 
-For questions, support, or to suggest enhancements, please reach out to [your email or a designated support channel]. 
+For questions, support, or to suggest enhancements, please reach out to [selvaj@google.com]. 
 
-**Explanation of New Script & Changes**
-
-* **Key Features Update:**  Added a description in the Key Features section to explain the `sendWsrEmail` script's functionality. 
-* **How to Use Guidance:** The setup instructions now include steps for creating the Google Slides template and clarifying how the script identifies the correct slide for analysis.
-
-**Let me know if you have any other scripts to include or would like me to refine this further!** 
