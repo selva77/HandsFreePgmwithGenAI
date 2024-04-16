@@ -1,6 +1,6 @@
 # HandsFree Pgm with GenAI
 
-Automation of End to End Status Reporting Workflow
+**Automation of End to End Status Reporting Workflow**
 This repository contains Google Workspace Scripts designed to automate and enhance the creation, distribution, and archival of weekly status reports.
 
 Key Features
