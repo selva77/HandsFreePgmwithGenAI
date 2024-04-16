@@ -42,7 +42,7 @@ function llmSummary3(){
       }]
     }],
     "generationConfig": {
-    "temperature": 0.1,
+    "temperature": 4,
     "topK": 5,
     "topP": 1,
     "maxOutputTokens": 2048,
