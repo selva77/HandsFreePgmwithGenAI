@@ -1,5 +1,3 @@
-Absolutely! Here's the updated README including the `sendWsrEmail` script with additional explanations:
-
 
 ## Google Workspace Scripts for Weekly Status Reporting
 
